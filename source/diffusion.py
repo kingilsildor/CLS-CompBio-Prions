@@ -54,23 +54,26 @@ def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, d
     return A, B, eqA, eqB, delta_t
 
 
-def save_image(protein_grid, neuron_grid, prion_grid, step):
+def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
     im0 = axes[0].imshow(protein_grid.T, origin="lower", cmap="viridis")
-    axes[0].set_title(f"A Value (Step {step})")
+    axes[0].set_title("Protein concentration")
     fig.colorbar(im0, ax=axes[0])
 
     im1 = axes[1].imshow(neuron_grid.T, origin="lower", cmap="gray")
-    axes[1].set_title("Neuron Grid")
+    axes[1].set_title("Amount of neurons")
     fig.colorbar(im1, ax=axes[1])
 
     im2 = axes[2].imshow(prion_grid.T, origin="lower", cmap="plasma")
-    axes[2].set_title("Prion Grid")
+    axes[2].set_title("Prion concentration")
     fig.colorbar(im2, ax=axes[2])
 
+    fig.suptitle(f"Simulation Step {step}/{total_steps - 1}", fontsize=16)
+
+    # plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.tight_layout()
-    plt.savefig(f"results/step_{step}.png", dpi=300)
+    plt.savefig(f"results/step_{step:03d}.png", dpi=300)
     plt.close()
 
 
@@ -102,9 +105,4 @@ def run_diffusion(
         prion_cell_death(prion_grid, neuron_grid, neuron_dict)
 
         if save_img and step % save_interval == 0:
-            save_image(
-                protein_grid,
-                neuron_grid,
-                prion_grid,
-                step,
-            )
+            save_image(protein_grid, neuron_grid, prion_grid, step, steps)

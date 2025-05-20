@@ -1,12 +1,13 @@
 import numpy as np
 
 from config import *
+from scripts.create_gif import create_gif
 from source.cells import create_neuron_dict, neuron_secrete
 from source.diffusion import init_diffusion_eq, pre_diffusion, run_diffusion
 from source.grid import initialize_grid, initialize_value_grid
 
 dx, nx = 1.0, 100
-steps = 200
+steps = 601
 mesh, N = initialize_grid(dx=dx, nx=nx)
 print(f"Mesh: {mesh.shape}")
 
@@ -50,3 +51,5 @@ run_diffusion(
     save_img=True,
     save_interval=10,
 )
+
+create_gif(file_path="results", timepoints=list(range(0, steps, 10)))
