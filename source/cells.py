@@ -69,8 +69,31 @@ def prion_cell_death(prion_grid, cell_grid, neuron_dict):
     neighbor_prion_sum = convolve2d(
         prion_grid, kernel, mode="same", boundary="fill", fillvalue=0
     )
-    print(neighbor_prion_sum)
 
     death_mask = (neighbor_prion_sum > PRION_THRESHOLD) & (cell_grid != 0)
     death_coords = np.argwhere(death_mask)
+
+    _ = [neuron_dict[tuple(coord)].die() for coord in death_coords]
     return death_coords
+
+
+def neuron_age(N_neurons):
+    ages = np.random.normal(
+        loc=MAX_AGE * MEAN_AGE_FACTOR,
+        scale=MAX_AGE * STD_AGE_FACTOR,
+        size=N_neurons,
+    )
+    ages = [min(MAX_AGE, max(0, int(round(age)))) for age in ages]
+    return ages
+
+
+def create_neuron_dict(neuron_grid):
+    neuron_dict = {}
+    neuron_coords = np.argwhere(neuron_grid == 1)
+    ages = neuron_age(len(neuron_coords))
+
+    for coords in neuron_coords:
+        x, y = coords
+        neuron = Neuron(x, y, age=ages.pop(0))
+        neuron_dict[tuple(coords)] = neuron
+    return neuron_dict
