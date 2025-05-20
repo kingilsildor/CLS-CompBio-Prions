@@ -1,0 +1,11 @@
+[project]
+name = "prions-analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fipy>=3.4.5",
+    "pyqt5>=5.15.11",
+    "scipy>=1.15.3",
+]
