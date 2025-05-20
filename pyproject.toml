@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fipy>=3.4.5",
+    "notebook>=7.4.2",
     "pyqt5>=5.15.11",
     "scipy>=1.15.3",
 ]

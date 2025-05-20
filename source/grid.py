@@ -2,7 +2,8 @@ import numpy as np
 from fipy import (
     Grid2D,
 )
-from scipy.ndimage import distance_transform_edt
+
+from config import *
 
 
 def initialize_grid(dx=1.0, nx=100):
@@ -20,14 +21,3 @@ def initialize_value_grid(N, num_items=1, value=1.0):
     grid = np.zeros(N)
     grid[random_index] = value
     return grid
-
-
-def create_value_gradient(grid, value=1.0, decay_rate=1):
-    N = np.sqrt(len(grid))
-    grid = grid.reshape((int(N), int(N)))
-    mask = grid == value
-
-    distances = distance_transform_edt(~mask)
-    gradient = np.where(mask, 1.0, 1 / np.power((1 + distances), decay_rate))
-
-    return gradient
