@@ -1,55 +1,55 @@
-import numpy as np
-
 from config import *
 from scripts.create_gif import create_gif
 from source.cells import create_neuron_dict, neuron_secrete
 from source.diffusion import init_diffusion_eq, pre_diffusion, run_diffusion
 from source.grid import initialize_grid, initialize_value_grid
 
-dx, nx = 1.0, 100
-steps = 601
-mesh, N = initialize_grid(dx=dx, nx=nx)
+mesh, N = initialize_grid(dx=GRID_SPACING, nx=GRID_SIZE)
 print(f"Mesh: {mesh.shape}")
 
-neuron_grid = initialize_value_grid(N, num_items=100, value=HEALTH_NEURON)
+neuron_grid = initialize_value_grid(N, num_items=NUMBER_OF_NEURONS, value=HEALTH_NEURON)
 print(f"Neuron grid: {neuron_grid.shape}")
 neuron_dict = create_neuron_dict(neuron_grid)
 print(f"Neuron dict: {len(neuron_dict)} neurons")
+
 protein_grid = neuron_secrete(neuron_grid)
-print(f"Protein grid: {protein_grid.shape} Before diffusion")
-protein_grid = pre_diffusion(mesh, protein_grid, D_A=5, steps=int(steps / 2), dt=0.2)
-print(f"Protein grid: {protein_grid.shape} After diffusion")
+protein_grid = pre_diffusion(protein_grid)
+print(f"Protein grid initialized: {protein_grid.shape}")
 
 prion_grid = initialize_value_grid(N, num_items=1, value=1)
-print(f"Prion grid: {prion_grid.shape}, with {np.sum(prion_grid == 1)} prion")
+print(f"Prion grid initialized: {prion_grid.shape}")
 
 A, B, eqA, eqB, delta_t = init_diffusion_eq(
     mesh,
     protein_grid,
     prion_grid,
-    k_A=0.02,
-    k_B=0.05,
-    k_c=0.01,
-    D_A=0.1,
-    D_B=0.05,
-    dx=dx,
+    k_A=k_A,
+    k_B=k_B,
+    k_c=k_c,
+    D_A=D_A,
+    D_B=D_B,
+    dx=GRID_SPACING,
 )
 print("Diffusion equations initialized")
-print(f"A: {A.shape}, B: {B.shape}")
 
 run_diffusion(
     A,
     B,
     eqA,
     eqB,
-    steps=steps,
+    steps=int(TIME / delta_t) + 1,
     dt=delta_t,
-    nx=nx,
     neuron_grid=neuron_grid,
     neuron_dict=neuron_dict,
+    protein_grid=protein_grid,
     prion_grid=prion_grid,
     save_img=True,
-    save_interval=10,
+    save_interval=SAVE_INTERVAL,
 )
 
-create_gif(file_path="results", timepoints=list(range(0, steps, 10)))
+create_gif(
+    file_path="results",
+    timepoints=list(range(0, int(TIME / delta_t) + 1, SAVE_INTERVAL)),
+    delete_img=True,
+    duration=GIF_DURATION,
+)

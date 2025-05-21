@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.ndimage import binary_dilation
-from scipy.signal import convolve2d
 
 from config import *
 
@@ -14,19 +13,22 @@ class Neuron:
 
     def die(self):
         self.alive = False
+        self.age = DEATH_NEURON
         return 0
 
-    def age_cell(self) -> int:
+    def age_cell(self):
         self.age += 1
 
-        P_apop = 1 / (1 + np.exp((-9.19 / MAX_AGE) * (self.age - 0.5 * MAX_AGE)))
-        if 0 < self.age < MAX_AGE and np.random.rand() > P_apop:
+        P_apop = P_apop = GAMMA * np.exp(DELTA * self.age)
+
+        if MIN_AGE < self.age < MAX_AGE and np.random.rand() < P_apop:
+            # print(
+            #     f"Neuron at ({self.x}, {self.y}) died due to apoptosis. Age: {self.age}, P_apop: {P_apop}"
+            # )
             self.die()
-            return 0
         if self.age >= MAX_AGE:
+            # print(f"Neuron at ({self.x}, {self.y}) died due to age.")
             self.die()
-            return 0
-        return 1
 
     def get_index(self, nx):
         i = int(self.x)
@@ -41,10 +43,9 @@ class Neuron:
 
 
 def neuron_secrete(grid):
-    mask = grid == HEALTH_NEURON
+    mask = grid >= HEALTH_NEURON
 
     full_structure = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=bool)
-
     cardinal_structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=bool)
 
     full_dilation = binary_dilation(mask, structure=full_structure)
@@ -63,27 +64,39 @@ def neuron_secrete(grid):
     return updated_grid
 
 
-def prion_cell_death(prion_grid, cell_grid, neuron_dict):
+def get_prion_neighbors(prion_grid):
     kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])
+    padded_prion = np.pad(prion_grid, pad_width=1, mode="constant", constant_values=0)
 
-    neighbor_prion_sum = convolve2d(
-        prion_grid, kernel, mode="same", boundary="fill", fillvalue=0
-    )
+    return kernel, padded_prion
 
-    death_mask = (neighbor_prion_sum > PRION_THRESHOLD) & (cell_grid != 0)
-    death_coords = np.argwhere(death_mask)
 
-    _ = [neuron_dict[tuple(coord)].die() for coord in death_coords]
-    return death_coords
+def prion_cell_death(neuron, prion_grid, neuron_grid):
+    x, y = neuron.get_coordinates()
+    rows, cols = prion_grid.shape
+
+    x_min = max(0, x - 1)
+    x_max = min(rows, x + 1)
+    y_min = max(0, y - 1)
+    y_max = min(cols, y + 1)
+
+    neighborhood = prion_grid[x_min:x_max, y_min:y_max].copy()
+
+    if (
+        0 <= x - x_min < neighborhood.shape[0]
+        and 0 <= y - y_min < neighborhood.shape[1]
+    ):
+        neighborhood[x - x_min, y - y_min] = 0
+        prion_sum = np.sum(neighborhood)
+
+        if prion_sum > PRION_THRESHOLD:
+            # print(f"Neuron at ({x}, {y}) died due to prion accumulation.")
+            neuron.die()
 
 
 def neuron_age(N_neurons):
-    ages = np.random.normal(
-        loc=MAX_AGE * MEAN_AGE_FACTOR,
-        scale=MAX_AGE * STD_AGE_FACTOR,
-        size=N_neurons,
-    )
-    ages = [min(MAX_AGE, max(0, int(round(age)))) for age in ages]
+    ages = np.random.exponential(scale=EXP_SCALE, size=N_neurons)
+    ages = [min(MAX_AGE, max(1, int(round(age)))) for age in ages]
     return ages
 
 
@@ -95,5 +108,6 @@ def create_neuron_dict(neuron_grid):
     for coords in neuron_coords:
         x, y = coords
         neuron = Neuron(x, y, age=ages.pop(0))
+        neuron_grid[x, y] = neuron.get_age()
         neuron_dict[tuple(coords)] = neuron
     return neuron_dict
