@@ -66,13 +66,13 @@ def set_boundary_conditions(mesh, A, B):
         B.faceGrad.constrain([0.0], faceGroup)
 
 
-def set_equations(A, B, k_A, k_B, k_c, D_A, D_B):
+def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi=0.5):
     eqA = TransientTerm(var=A) == -(k_A * A) - (k_c * A * B) + DiffusionTerm(
         coeff=D_A, var=A
     )
     eqB = TransientTerm(var=B) == (k_c * A * B) - (k_B * B) + DiffusionTerm(
         coeff=D_B, var=B
-    )
+    ) - DiffusionTerm(coeff=chi * B, var=A)
 
     return eqA, eqB
 
@@ -89,6 +89,9 @@ def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B):
 
 
 def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
+    # protein_grid = normalize_diffusion(protein_grid)
+    # prion_grid = normalize_diffusion(prion_grid)
+
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
     im0 = axes[0].imshow(protein_grid.T, origin="lower", cmap="viridis")
@@ -131,12 +134,9 @@ def run_diffusion(
         eqA.solve(var=A, dt=dt)
         eqB.solve(var=B, dt=dt)
 
-        neuron_secretion = neuron_secrete(neuron_grid).flatten()
-        # plot_diffusion(neuron_secretion.reshape((nx, nx)))
-
+        A.value += neuron_secrete(neuron_grid, dt).flatten()
         protein_grid = A.value.reshape((nx, nx))
 
-        B.value = normalize_diffusion(B.value)
         prion_grid = B.value.reshape((nx, nx))
         prion_cell_death(prion_grid, neuron_grid, neuron_dict)
 

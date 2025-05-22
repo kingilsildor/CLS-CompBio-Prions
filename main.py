@@ -3,21 +3,18 @@ from scripts.create_gif import create_gif
 from source.cells import create_neuron_dict, neuron_secrete
 from source.diffusion import (
     init_diffusion_eq,
-    normalize_diffusion,
     pre_diffusion,
     run_diffusion,
 )
 from source.grid import initialize_grid, initialize_value_grid
 
-dx, nx = TIME_SPACING, GRID_SIZE
-steps = TIME
+dx, nx = GRID_SPACING, GRID_SIZE
 mesh, N = initialize_grid(dx=dx, nx=nx)
 
 neuron_grid = initialize_value_grid(N, num_items=100, value=HEALTH_NEURON)
 neuron_dict = create_neuron_dict(neuron_grid)
-protein_grid = neuron_secrete(neuron_grid)
+protein_grid = neuron_secrete(neuron_grid, TIME_SPACING)
 protein_grid = pre_diffusion(protein_grid)
-protein_grid = normalize_diffusion(protein_grid)
 
 prion_grid = initialize_value_grid(N, num_items=1, value=1)
 

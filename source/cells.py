@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.ndimage import binary_dilation
+from scipy.ndimage import binary_dilation, gaussian_filter
 from scipy.signal import convolve2d
 
 from config import *
@@ -40,8 +40,8 @@ class Neuron:
         return self.age
 
 
-def neuron_secrete(grid):
-    mask = grid == HEALTH_NEURON
+def neuron_secrete(neuron_grid, dt):
+    mask = neuron_grid == HEALTH_NEURON
 
     full_structure = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=bool)
 
@@ -53,13 +53,13 @@ def neuron_secrete(grid):
     diagonal_mask = full_dilation & ~cardinal_dilation & ~mask
     cardinal_mask = cardinal_dilation & ~mask
 
-    diagonal_mask &= grid == 0
-    cardinal_mask &= grid == 0
+    diagonal_mask &= neuron_grid == 0
+    cardinal_mask &= neuron_grid == 0
 
-    updated_grid = np.zeros_like(grid)
-    updated_grid[cardinal_mask] = SECRETED_VALUE
-    updated_grid[diagonal_mask] = SECRETED_VALUE / 2  # Half value on diagonals
-
+    updated_grid = np.zeros_like(neuron_grid)
+    updated_grid[cardinal_mask] = SECRETED_VALUE * dt
+    updated_grid[diagonal_mask] = (SECRETED_VALUE / 2) * dt  # Half value on diagonals
+    updated_grid = gaussian_filter(updated_grid, sigma=1)
     return updated_grid
 
 
