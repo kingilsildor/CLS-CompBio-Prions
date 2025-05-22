@@ -1,29 +1,27 @@
-import numpy as np
-
 from config import *
 from scripts.create_gif import create_gif
 from source.cells import create_neuron_dict, neuron_secrete
-from source.diffusion import init_diffusion_eq, pre_diffusion, run_diffusion
+from source.diffusion import (
+    init_diffusion_eq,
+    normalize_diffusion,
+    pre_diffusion,
+    run_diffusion,
+)
 from source.grid import initialize_grid, initialize_value_grid
 
-dx, nx = 1.0, 100
-steps = 601
+dx, nx = TIME_SPACING, GRID_SIZE
+steps = TIME
 mesh, N = initialize_grid(dx=dx, nx=nx)
-print(f"Mesh: {mesh.shape}")
 
 neuron_grid = initialize_value_grid(N, num_items=100, value=HEALTH_NEURON)
-print(f"Neuron grid: {neuron_grid.shape}")
 neuron_dict = create_neuron_dict(neuron_grid)
-print(f"Neuron dict: {len(neuron_dict)} neurons")
 protein_grid = neuron_secrete(neuron_grid)
-print(f"Protein grid: {protein_grid.shape} Before diffusion")
-protein_grid = pre_diffusion(mesh, protein_grid, D_A=5, steps=int(steps / 2), dt=0.2)
-print(f"Protein grid: {protein_grid.shape} After diffusion")
+protein_grid = pre_diffusion(protein_grid)
+protein_grid = normalize_diffusion(protein_grid)
 
 prion_grid = initialize_value_grid(N, num_items=1, value=1)
-print(f"Prion grid: {prion_grid.shape}, with {np.sum(prion_grid == 1)} prion")
 
-A, B, eqA, eqB, delta_t = init_diffusion_eq(
+A, B, eqA, eqB = init_diffusion_eq(
     mesh,
     protein_grid,
     prion_grid,
@@ -32,18 +30,15 @@ A, B, eqA, eqB, delta_t = init_diffusion_eq(
     k_c=0.01,
     D_A=0.1,
     D_B=0.05,
-    dx=dx,
 )
-print("Diffusion equations initialized")
-print(f"A: {A.shape}, B: {B.shape}")
 
 run_diffusion(
     A,
     B,
     eqA,
     eqB,
-    steps=steps,
-    dt=delta_t,
+    steps=TIME + 1,
+    dt=TIME_SPACING,
     nx=nx,
     neuron_grid=neuron_grid,
     neuron_dict=neuron_dict,
@@ -52,4 +47,8 @@ run_diffusion(
     save_interval=10,
 )
 
-create_gif(file_path="results", timepoints=list(range(0, steps, 10)))
+create_gif(
+    file_path="results",
+    timepoints=list(range(0, TIME + 1, SAVE_INTERVAL)),
+    delete_img=False,
+)

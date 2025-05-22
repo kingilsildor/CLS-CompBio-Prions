@@ -1,26 +1,63 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from fipy import CellVariable, DiffusionTerm, TransientTerm
+from scipy.ndimage import convolve, distance_transform_edt, gaussian_filter
 from tqdm import tqdm
 
+from config import *
 from source.cells import neuron_secrete, prion_cell_death
 
 
-def pre_diffusion(mesh, init_grid, D_A, steps, dt):
-    if init_grid.ndim == 2:
-        init_grid = init_grid.flatten()
+def make_diffusion_kernel(size: int, sigma_scale: float = 0.3) -> np.ndarray:
+    if size % 2 == 0:
+        size += 1
 
-    A = CellVariable(mesh=mesh, value=init_grid, hasOld=True)
-    eq = TransientTerm(var=A) == DiffusionTerm(coeff=D_A, var=A)
+    kernel = np.zeros((size, size), dtype=np.float32)
+    center = size // 2
+    kernel[center, center] = 1.0
 
-    A.updateOld()
-    for _ in tqdm(range(steps)):
-        eq.solve(var=A, dt=dt)
-        A.updateOld()
+    sigma = size * sigma_scale
+    kernel = gaussian_filter(kernel, sigma=sigma)
 
-    new_A = A.value.copy()
-    if new_A.ndim == 1:
-        new_A = new_A.reshape(mesh.shape)
-    return new_A
+    kernel /= kernel.sum()
+
+    return kernel
+
+
+def make_diffusion_gradient(init_grid, diffusion_power, scaling_factor):
+    mask_main = init_grid == SECRETED_VALUE
+    mask_diagonal = init_grid == SECRETED_VALUE / 2
+
+    dist_main = distance_transform_edt(~mask_main)
+    dist_diagonal = distance_transform_edt(~mask_diagonal)
+
+    grad_main = np.where(mask_main, 1.0, 1 / np.power((1 + dist_main), diffusion_power))
+    grad_diagonal = np.where(
+        mask_diagonal, 1.0, 1 / np.power((1 + dist_diagonal), diffusion_power)
+    )
+    combined_gradient = grad_main + grad_diagonal
+
+    combined_gradient *= scaling_factor
+    combined_gradient /= np.max(combined_gradient)
+
+    return combined_gradient
+
+
+def pre_diffusion(init_grid, diffusion_power=1 / 5, scaling_factor=2, kernel_size=9):
+    kernel = make_diffusion_kernel(kernel_size)
+    gradient = make_diffusion_gradient(init_grid, diffusion_power, scaling_factor)
+    weighted_grid = init_grid * gradient
+    diffused = convolve(weighted_grid, kernel, mode="reflect")
+
+    return diffused
+
+
+def normalize_diffusion(grid):
+    grid -= grid.min()
+    if grid.max() != 0:
+        grid /= grid.max()
+
+    return grid
 
 
 def set_boundary_conditions(mesh, A, B):
@@ -40,10 +77,7 @@ def set_equations(A, B, k_A, k_B, k_c, D_A, D_B):
     return eqA, eqB
 
 
-def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, dx):
-    D = max(D_A, D_B)
-    delta_t = 0.5 * (1 / (D * (1 / dx**2 + 1 / dx**2)))
-
+def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B):
     A = CellVariable(name="A", mesh=mesh, value=protein_grid.flatten(), hasOld=True)
     B = CellVariable(name="B", mesh=mesh, value=prion_grid.flatten(), hasOld=True)
 
@@ -51,7 +85,7 @@ def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, d
 
     eqA, eqB = set_equations(A, B, k_A, k_B, k_c, D_A, D_B)
 
-    return A, B, eqA, eqB, delta_t
+    return A, B, eqA, eqB
 
 
 def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
@@ -71,7 +105,6 @@ def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
 
     fig.suptitle(f"Simulation Step {step}/{total_steps - 1}", fontsize=16)
 
-    # plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.tight_layout()
     plt.savefig(f"results/step_{step:03d}.png", dpi=300)
     plt.close()
@@ -98,9 +131,12 @@ def run_diffusion(
         eqA.solve(var=A, dt=dt)
         eqB.solve(var=B, dt=dt)
 
-        A.value += neuron_secrete(neuron_grid).flatten()
+        neuron_secretion = neuron_secrete(neuron_grid).flatten()
+        # plot_diffusion(neuron_secretion.reshape((nx, nx)))
+
         protein_grid = A.value.reshape((nx, nx))
 
+        B.value = normalize_diffusion(B.value)
         prion_grid = B.value.reshape((nx, nx))
         prion_cell_death(prion_grid, neuron_grid, neuron_dict)
 
