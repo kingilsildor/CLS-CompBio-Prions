@@ -21,7 +21,7 @@ GRID_SIZE = 50  # Grid size (number of cells per side)
 GRID_SPACING = 0.045  # Grid spacing (mm)
 
 k_A = 0.7  # Protein decay rate (μg/μg/day)
-k_B = 0.01  # Prion decay rate (μg/μg/day)
+k_B = 0.05  # Prion decay rate (μg/μg/day)
 k_c = 1.2  # Conversion rate (μg/μg/day)
 D_A = 0.7  # Protein diffusion coefficient (mm^2/day)
 D_B = 0.6  # Prion diffusion coefficient (mm^2/day)
