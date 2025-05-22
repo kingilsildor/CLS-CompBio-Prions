@@ -50,9 +50,18 @@ class Neuron:
         self.died = cause
         return 0
 
-    def age_cell(self, neuron_grid, neuron_dict) -> None:
+    def age_cell(self, neuron_grid, neuron_dict) -> int:
         """
         Increment the neuron's age and check for apoptosis or age-related death.
+
+        Params
+        -------
+        - neuron_grid (np.ndarray): Grid of neuron health states.
+        - neuron_dict (dict): Dictionary mapping coordinates to Neuron objects.
+
+        Returns
+        -------
+        - int: 1 if the neuron dies, 0 otherwise.
         """
         self.age += 1
 
@@ -61,16 +70,26 @@ class Neuron:
 
         if MIN_AGE < self.age and np.random.rand() < P_apop:
             self.die("apoptosis")
+
             if np.random.rand() < NEW_CELL_CHANGE:
                 create_neuron(neuron_grid, neuron_dict)
 
-    def prion_cell_death(self, prion_grid, neuron_grid, neuron_dict) -> None:
+            return 1
+        return 0
+
+    def prion_cell_death(self, prion_grid, neuron_grid, neuron_dict) -> int:
         """
         Check for prion-induced neuron death based on prion concentration in the neighborhood.
 
         Params
         -------
         - prion_grid (np.ndarray): Grid of prion concentrations.
+        - neuron_grid (np.ndarray): Grid of neuron health states.
+        - neuron_dict (dict): Dictionary mapping coordinates to Neuron objects.
+
+        Returns
+        -------
+        - int: 1 if the neuron dies, 0 otherwise.
         """
         neighborhood = prion_grid[self.x - 1 : self.x + 2, self.y - 1 : self.y + 2]
         neighbor_sum = np.sum(neighborhood) - prion_grid[self.x, self.y]
@@ -79,6 +98,9 @@ class Neuron:
 
             if np.random.rand() < NEW_CELL_CHANGE:
                 create_neuron(neuron_grid, neuron_dict)
+
+            return 1
+        return 0
 
     def get_index(self, nx) -> int:
         """

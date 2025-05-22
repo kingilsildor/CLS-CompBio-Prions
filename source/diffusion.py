@@ -167,7 +167,7 @@ def init_diffusion_eq(
     k_c: float,
     D_A: float,
     D_B: float,
-    chi: float = 10.0,
+    chi: float = 100.0,
 ):
     """
     Initialize FiPy CellVariables and equations for protein and prion diffusion.
@@ -230,7 +230,9 @@ def run_diffusion(
 
     """
     time = time + 1
-    for step in tqdm(range(time), desc="Running Diffusion", unit="step"):
+    cell_death_counter = np.zeros(time, dtype=int)
+
+    for step in tqdm(range(time), desc="Running Diffusion", unit=" step"):
         if save_img and step % save_interval == 0:
             write_grid(protein_grid, "protein", step)
             write_grid(prion_grid, "prion", step)
@@ -249,9 +251,14 @@ def run_diffusion(
         copy_neuron_dict = neuron_dict.copy()
         for neuron in neuron_dict.values():
             if neuron.alive:
-                neuron.age_cell(neuron_grid, copy_neuron_dict)
-                neuron.prion_cell_death(prion_grid, neuron_grid, copy_neuron_dict)
+                cell_death_counter[step] += neuron.age_cell(
+                    neuron_grid, copy_neuron_dict
+                )
+                cell_death_counter[step] += neuron.prion_cell_death(
+                    prion_grid, neuron_grid, copy_neuron_dict
+                )
             coords = neuron.get_coordinates()
             neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
 
         neuron_dict.update(copy_neuron_dict)
+    return cell_death_counter

@@ -70,7 +70,7 @@ def plot_concentrations(
 
 def plot_average_concentration(grids, grid_name, timepoints) -> None:
     """
-    Plot and save the average concentration of a grid over time.
+    Plot and save the total concentration of a grid over time.
 
     Params
     -------
@@ -80,17 +80,17 @@ def plot_average_concentration(grids, grid_name, timepoints) -> None:
 
     Returns
     -------
-    - Plot of average concentration over time.
+    - Plot of total concentration over time.
     """
-    avg_concentration = [np.mean(grid) for grid in grids]
+    total_concentration = [np.sum(grid) for grid in grids]
 
-    plt.plot(timepoints, avg_concentration, marker="o")
-    plt.title("Average Concentration Over Time")
+    plt.plot(timepoints, total_concentration, marker="o")
+    plt.title("Total Concentration Over Time")
     plt.xlabel("Timestep")
-    plt.ylabel("Average Concentration")
+    plt.ylabel("Total Concentration")
 
     plt.tight_layout()
-    plt.savefig(f"results/average_concentration_{grid_name}.png", dpi=FIG_DPI)
+    plt.savefig(f"results/total_concentration_{grid_name}.png", dpi=FIG_DPI)
     plt.close()
 
 
@@ -152,6 +152,8 @@ def plot_prion_cell_death(prion_grid, neuron_dict, step) -> None:
     -------
     - Plot of neuron locations and prion concentration.
     """
+    prion_grid = normalize_diffusion(prion_grid)
+
     plt.figure(figsize=(8, 8))
     for neuron in neuron_dict.values():
         x, y = neuron.get_coordinates()
@@ -162,8 +164,45 @@ def plot_prion_cell_death(prion_grid, neuron_dict, step) -> None:
 
     plt.imshow(prion_grid.T, origin="lower", cmap="plasma")
     plt.colorbar(label="Prion Concentration")
+    plt.legend(
+        ["Neuron (alive)", "Neuron (prion-induced death)"],
+        loc="upper right",
+        title="Neuron Status",
+    )
     plt.xlabel("X")
     plt.ylabel("Y")
     plt.title("Neuron Locations and Prion Concentration")
     plt.savefig(f"results/prion_cell_death_{step:03d}.png", dpi=FIG_DPI)
+    plt.close()
+
+
+def plot_neuron_deaths_over_time(cell_death_counter, time) -> None:
+    """
+    Plot and save the number of neuron deaths over time.
+
+    Params
+    -------
+    - cell_death_counter (list): List of neuron deaths at each time step.
+    - timepoints (list): List of timepoints.
+
+    Returns
+    -------
+    - Plot of neuron deaths over time.
+    """
+    timepoints = np.arange(0, time + 1)
+
+    plt.hist(
+        timepoints,
+        bins=10,
+        weights=cell_death_counter,
+        color="blue",
+        alpha=0.7,
+        edgecolor="black",
+    )
+    plt.title("Neuron Deaths Over Time")
+    plt.xlabel("Timestep")
+    plt.ylabel("Number of Neuron Deaths")
+
+    plt.tight_layout()
+    plt.savefig("results/neuron_deaths_over_time.png", dpi=FIG_DPI)
     plt.close()

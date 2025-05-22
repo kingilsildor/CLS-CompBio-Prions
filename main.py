@@ -17,6 +17,7 @@ from scripts.create_plots import (
     plot_concentrations,
     plot_neuron_deaths,
     plot_prion_cell_death,
+    plot_neuron_deaths_over_time,
 )
 from scripts.data_manipulation import delete_npy, read_all_grids, read_grids_at_timestep
 from source.cells import create_neuron_dict, neuron_secrete
@@ -76,7 +77,7 @@ def run_simulation(
     neuron_dict: dict,
     protein_grid: np.ndarray,
     prion_grid: np.ndarray,
-):
+) -> list:
     """
     Run the main simulation loop for protein and prion diffusion and neuron state updates.
 
@@ -93,9 +94,9 @@ def run_simulation(
 
     Returns
     -------
-    - None
+    - cell_death_counter (list): Number of neurons that died at each time step
     """
-    run_diffusion(
+    cell_death_counter = run_diffusion(
         A,
         B,
         eqA,
@@ -109,9 +110,10 @@ def run_simulation(
         save_img=True,
         save_interval=SAVE_INTERVAL,
     )
+    return cell_death_counter
 
 
-def plot_simulation_results(neuron_dict):
+def plot_simulation_results(neuron_dict, cell_death_counter) -> None:
     """
     Generate and save plots, GIFs, and summary statistics from simulation results.
 
@@ -122,7 +124,7 @@ def plot_simulation_results(neuron_dict):
     timepoints = list(range(0, TIME + 1, SAVE_INTERVAL))
 
     # Plot concentrations and prion cell death at each timepoint
-    for timepoint in tqdm(timepoints, desc="Plotting", unit="timepoint"):
+    for timepoint in tqdm(timepoints, desc="Plotting", unit=" timepoint"):
         neuron_grid, prion_grid, protein_grid = read_grids_at_timestep(timepoint)
         plot_concentrations(protein_grid, neuron_grid, prion_grid, timepoint, TIME)
         plot_prion_cell_death(prion_grid, neuron_dict, timepoint)
@@ -144,10 +146,12 @@ def plot_simulation_results(neuron_dict):
         file_path="results",
         timepoints=timepoints,
         file_name="prion_cell_death",
+        delete_img=False,
     )
 
     # Plot neuron deaths summary
     plot_neuron_deaths(neuron_dict)
+    plot_neuron_deaths_over_time(cell_death_counter, TIME)
 
 
 def main():
@@ -156,8 +160,10 @@ def main():
         initialize_simulation()
     )
 
-    run_simulation(A, B, eqA, eqB, neuron_grid, neuron_dict, protein_grid, prion_grid)
-    plot_simulation_results(neuron_dict)
+    cell_death_counter = run_simulation(
+        A, B, eqA, eqB, neuron_grid, neuron_dict, protein_grid, prion_grid
+    )
+    plot_simulation_results(neuron_dict, cell_death_counter)
     end_time = time.time()
 
     print(f"Simulation completed in {end_time - start_time:.2f} seconds.")
