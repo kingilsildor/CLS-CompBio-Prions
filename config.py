@@ -21,8 +21,8 @@ k_c = 0.6  # μg/μg/day
 D_A = 0.7  # mm^2/day
 D_B = 0.5  # mm^2/day
 
-TIME = 200
-TIME_SPACING = 0.1
+TIME = 250
+TIME_SPACING = 0.001
 SECONDS = 25  # timesteps
 SAVE_INTERVAL = 10
 GIF_DURATION = 10
@@ -30,5 +30,5 @@ GIF_DURATION = 10
 FIG_DPI = 300
 
 SECRETED_VALUE = 4  # μm a day for each μg
-PRION_THRESHOLD = 100  # μg per μg neuron # UPDATE NOTES
+PRION_THRESHOLD = 1  # μg per μg neuron # UPDATE NOTES
 NUMBER_OF_NEURONS = 500

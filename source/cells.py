@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.ndimage import binary_dilation, gaussian_filter
-from scipy.signal import convolve2d
 
 from config import *
 
@@ -11,22 +10,30 @@ class Neuron:
         self.y = y
         self.alive = True
         self.age = age  # in timesteps
+        self.died = None
 
-    def die(self):
+    def die(self, cause):
         self.alive = False
+        self.age = DEATH_NEURON
+        self.died = cause
         return 0
 
-    def age_cell(self) -> int:
+    def age_cell(self):
         self.age += 1
 
-        P_apop = 1 / (1 + np.exp((-9.19 / MAX_AGE) * (self.age - 0.5 * MAX_AGE)))
-        if 0 < self.age < MAX_AGE and np.random.rand() > P_apop:
-            self.die()
-            return 0
-        if self.age >= MAX_AGE:
-            self.die()
-            return 0
-        return 1
+        AGE_HALF = MAX_AGE / 2
+        P_apop = GAMMA / (1 + np.exp(-DELTA * (self.age - AGE_HALF)))
+
+        if MIN_AGE < self.age < MAX_AGE and np.random.rand() < P_apop:
+            self.die("apoptosis")
+        elif self.age >= MAX_AGE:
+            self.die("age")
+
+    def prion_cell_death(self, prion_grid):
+        neighborhood = prion_grid[self.x - 1 : self.x + 2, self.y - 1 : self.y + 2]
+        neighbor_sum = np.sum(neighborhood) - prion_grid[self.x, self.y]
+        if neighbor_sum > PRION_THRESHOLD:
+            self.die("prion")
 
     def get_index(self, nx):
         i = int(self.x)
@@ -63,27 +70,9 @@ def neuron_secrete(neuron_grid, dt):
     return updated_grid
 
 
-def prion_cell_death(prion_grid, cell_grid, neuron_dict):
-    kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])
-
-    neighbor_prion_sum = convolve2d(
-        prion_grid, kernel, mode="same", boundary="fill", fillvalue=0
-    )
-
-    death_mask = (neighbor_prion_sum > PRION_THRESHOLD) & (cell_grid != 0)
-    death_coords = np.argwhere(death_mask)
-
-    _ = [neuron_dict[tuple(coord)].die() for coord in death_coords]
-    return death_coords
-
-
 def neuron_age(N_neurons):
-    ages = np.random.normal(
-        loc=MAX_AGE * MEAN_AGE_FACTOR,
-        scale=MAX_AGE * STD_AGE_FACTOR,
-        size=N_neurons,
-    )
-    ages = [min(MAX_AGE, max(0, int(round(age)))) for age in ages]
+    ages = np.random.exponential(scale=EXP_SCALE, size=N_neurons)
+    ages = [min(MAX_AGE, max(1, int(round(age)))) for age in ages]
     return ages
 
 
@@ -95,5 +84,6 @@ def create_neuron_dict(neuron_grid):
     for coords in neuron_coords:
         x, y = coords
         neuron = Neuron(x, y, age=ages.pop(0))
+        neuron_grid[x, y] = neuron.get_age()
         neuron_dict[tuple(coords)] = neuron
     return neuron_dict

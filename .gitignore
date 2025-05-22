@@ -178,3 +178,5 @@ cython_debug/
 **test**.ipynb
 **temp**.py
 **temp**.ipynb
+
+**.npy

@@ -1,11 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from fipy import CellVariable, DiffusionTerm, TransientTerm
 from scipy.ndimage import convolve, distance_transform_edt, gaussian_filter
 from tqdm import tqdm
 
 from config import *
-from source.cells import neuron_secrete, prion_cell_death
+from scripts.data_manipulation import write_grid
+from source.cells import neuron_secrete
 
 
 def make_diffusion_kernel(size: int, sigma_scale: float = 0.3) -> np.ndarray:
@@ -52,21 +52,13 @@ def pre_diffusion(init_grid, diffusion_power=1 / 5, scaling_factor=2, kernel_siz
     return diffused
 
 
-def normalize_diffusion(grid):
-    grid -= grid.min()
-    if grid.max() != 0:
-        grid /= grid.max()
-
-    return grid
-
-
 def set_boundary_conditions(mesh, A, B):
     for faceGroup in [mesh.facesLeft, mesh.facesRight, mesh.facesTop, mesh.facesBottom]:
         A.faceGrad.constrain([0.0], faceGroup)
         B.faceGrad.constrain([0.0], faceGroup)
 
 
-def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi=0.5):
+def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi):  # Increased default chi
     eqA = TransientTerm(var=A) == -(k_A * A) - (k_c * A * B) + DiffusionTerm(
         coeff=D_A, var=A
     )
@@ -77,40 +69,15 @@ def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi=0.5):
     return eqA, eqB
 
 
-def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B):
+def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, chi=10):
     A = CellVariable(name="A", mesh=mesh, value=protein_grid.flatten(), hasOld=True)
     B = CellVariable(name="B", mesh=mesh, value=prion_grid.flatten(), hasOld=True)
 
     set_boundary_conditions(mesh, A, B)
 
-    eqA, eqB = set_equations(A, B, k_A, k_B, k_c, D_A, D_B)
+    eqA, eqB = set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi=chi)
 
     return A, B, eqA, eqB
-
-
-def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
-    # protein_grid = normalize_diffusion(protein_grid)
-    # prion_grid = normalize_diffusion(prion_grid)
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-
-    im0 = axes[0].imshow(protein_grid.T, origin="lower", cmap="viridis")
-    axes[0].set_title("Protein concentration")
-    fig.colorbar(im0, ax=axes[0])
-
-    im1 = axes[1].imshow(neuron_grid.T, origin="lower", cmap="gray")
-    axes[1].set_title("Amount of neurons")
-    fig.colorbar(im1, ax=axes[1])
-
-    im2 = axes[2].imshow(prion_grid.T, origin="lower", cmap="plasma")
-    axes[2].set_title("Prion concentration")
-    fig.colorbar(im2, ax=axes[2])
-
-    fig.suptitle(f"Simulation Step {step}/{total_steps - 1}", fontsize=16)
-
-    plt.tight_layout()
-    plt.savefig(f"results/step_{step:03d}.png", dpi=300)
-    plt.close()
 
 
 def run_diffusion(
@@ -118,16 +85,22 @@ def run_diffusion(
     B,
     eqA,
     eqB,
-    steps,
+    time,
     dt,
-    nx,
     neuron_grid,
     neuron_dict,
+    protein_grid,
     prion_grid,
     save_img=True,
     save_interval=10,
 ):
-    for step in tqdm(range(steps)):
+    time = time + 1
+    for step in tqdm(range(time), desc="Running Diffusion", unit="step"):
+        if save_img and step % save_interval == 0:
+            write_grid(protein_grid, "protein", step)
+            write_grid(prion_grid, "prion", step)
+            write_grid(neuron_grid, "neuron", step)
+
         A.updateOld()
         B.updateOld()
 
@@ -135,10 +108,12 @@ def run_diffusion(
         eqB.solve(var=B, dt=dt)
 
         A.value += neuron_secrete(neuron_grid, dt).flatten()
-        protein_grid = A.value.reshape((nx, nx))
+        protein_grid = A.value.reshape((GRID_SIZE, GRID_SIZE))
+        prion_grid = B.value.reshape((GRID_SIZE, GRID_SIZE))
 
-        prion_grid = B.value.reshape((nx, nx))
-        prion_cell_death(prion_grid, neuron_grid, neuron_dict)
-
-        if save_img and step % save_interval == 0:
-            save_image(protein_grid, neuron_grid, prion_grid, step, steps)
+        for neuron in neuron_dict.values():
+            if neuron.alive:
+                neuron.age_cell()
+                neuron.prion_cell_death(prion_grid)
+            coords = neuron.get_coordinates()
+            neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
