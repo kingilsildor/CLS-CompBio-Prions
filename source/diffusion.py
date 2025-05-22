@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from fipy import CellVariable, DiffusionTerm, TransientTerm
-from matplotlib.colors import LinearSegmentedColormap, Normalize
 from scipy.ndimage import distance_transform_edt
 from tqdm import tqdm
 
@@ -47,7 +46,7 @@ def set_equations(A, B, k_A, k_B, k_c, D_A, D_B):
 
 def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, dx):
     D = max(D_A, D_B)
-    delta_t = 0.5 * (1 / (D * (1 / dx**2 + 1 / dx**2)))
+    delta_t = 1
 
     A = CellVariable(name="A", mesh=mesh, value=protein_grid.flatten(), hasOld=True)
     B = CellVariable(name="B", mesh=mesh, value=prion_grid.flatten(), hasOld=True)
@@ -65,24 +64,11 @@ def save_image(protein_grid, neuron_grid, prion_grid, step, total_steps):
     axes[0].set_title("Protein concentration")
     fig.colorbar(im0, ax=axes[0])
 
-    red_pos = (DEATH_NEURON - DEATH_MIN) / (MAX_AGE - DEATH_MIN)
-    white_pos = (0 - DEATH_MIN) / (MAX_AGE - DEATH_MIN)
-
-    colors = [
-        (0.0, "darkred"),
-        (red_pos * 0.75, "red"),
-        (white_pos, "white"),
-        (1.0, "blue"),
-    ]
-
-    custom_cmap = LinearSegmentedColormap.from_list("red_white_blue_stretched", colors)
-    norm = Normalize(vmin=DEATH_MIN, vmax=MAX_AGE)
-    im1 = axes[1].imshow(neuron_grid.T, origin="lower", cmap=custom_cmap, norm=norm)
+    im1 = axes[1].imshow(
+        neuron_grid.T, origin="lower", cmap="Greys", vmin=DEATH_MIN, vmax=MAX_AGE
+    )
     axes[1].set_title("Neuron distribution")
-
-    cbar = fig.colorbar(im1, ax=axes[1])
-    cbar.set_label("Neuron age")
-    cbar.set_ticks([-1, 50, 100, 150, 200])
+    fig.colorbar(im1, ax=axes[1])
 
     im2 = axes[2].imshow(prion_grid.T, origin="lower", cmap="plasma", vmin=0, vmax=1)
     axes[2].set_title("Prion concentration")
@@ -110,12 +96,6 @@ def run_diffusion(
     save_interval=10,
 ):
     for step in tqdm(range(steps)):
-        A.updateOld()
-        B.updateOld()
-
-        eqA.solve(var=A, dt=dt)
-        eqB.solve(var=B, dt=dt)
-
         if save_img and step % save_interval == 0:
             save_image(
                 protein_grid,
@@ -125,14 +105,19 @@ def run_diffusion(
                 steps,
             )
 
+        A.updateOld()
+        B.updateOld()
+
+        eqA.solve(var=A, dt=dt)
+        eqB.solve(var=B, dt=dt)
+
         A.value += neuron_secrete(neuron_grid).flatten()
         protein_grid = A.value.reshape((GRID_SIZE, GRID_SIZE))
         prion_grid = B.value.reshape((GRID_SIZE, GRID_SIZE))
 
-        if step % SECONDS == 0:
-            for neuron in neuron_dict.values():
-                if neuron.alive:
-                    neuron.age_cell()
-                    prion_cell_death(neuron, prion_grid, neuron_grid)
-                coords = neuron.get_coordinates()
-                neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
+        for neuron in neuron_dict.values():
+            if neuron.alive:
+                neuron.age_cell()
+                prion_cell_death(neuron, prion_grid, neuron_grid)
+            coords = neuron.get_coordinates()
+            neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()

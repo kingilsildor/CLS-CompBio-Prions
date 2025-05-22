@@ -17,14 +17,14 @@ GRID_SIZE = 50  # just a spaceing
 GRID_SPACING = 0.044  # in mm
 
 k_A = 0.7  # μg/μg/day
-k_B = 0.5  # μg/μg/day
+k_B = 0.2  # μg/μg/day
 k_c = 0.6  # μg/μg/day
 D_A = 0.7  # mm^2/day
 D_B = 0.1  # mm^2/day
 
-TIME = 300
+TIME = 200
 SECONDS = 25  # timesteps
 SAVE_INTERVAL = 10
-GIF_DURATION = 100
+GIF_DURATION = 10
 
 FIG_DPI = 300

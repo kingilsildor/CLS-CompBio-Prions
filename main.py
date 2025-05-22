@@ -50,6 +50,6 @@ run_diffusion(
 create_gif(
     file_path="results",
     timepoints=list(range(0, int(TIME / delta_t) + 1, SAVE_INTERVAL)),
-    delete_img=True,
+    delete_img=False,
     duration=GIF_DURATION,
 )
