@@ -17,7 +17,7 @@ class Neuron:
     died (str or None): Cause of neuron death.
     """
 
-    def __init__(self, x, y, age=0):
+    def __init__(self, x, y, age=HEALTH_NEURON):
         """
         Initialize a neuron at position (x, y) with a given age.
 
@@ -50,7 +50,7 @@ class Neuron:
         self.died = cause
         return 0
 
-    def age_cell(self) -> None:
+    def age_cell(self, neuron_grid, neuron_dict) -> None:
         """
         Increment the neuron's age and check for apoptosis or age-related death.
         """
@@ -61,10 +61,10 @@ class Neuron:
 
         if MIN_AGE < self.age and np.random.rand() < P_apop:
             self.die("apoptosis")
-        # elif self.age >= MAX_AGE:
-        #     self.die("age")
+            if np.random.rand() < NEW_CELL_CHANGE:
+                create_neuron(neuron_grid, neuron_dict)
 
-    def prion_cell_death(self, prion_grid) -> None:
+    def prion_cell_death(self, prion_grid, neuron_grid, neuron_dict) -> None:
         """
         Check for prion-induced neuron death based on prion concentration in the neighborhood.
 
@@ -76,6 +76,9 @@ class Neuron:
         neighbor_sum = np.sum(neighborhood) - prion_grid[self.x, self.y]
         if neighbor_sum > PRION_THRESHOLD:
             self.die("prion")
+
+            if np.random.rand() < NEW_CELL_CHANGE:
+                create_neuron(neuron_grid, neuron_dict)
 
     def get_index(self, nx) -> int:
         """
@@ -187,3 +190,25 @@ def create_neuron_dict(neuron_grid) -> dict:
         neuron_grid[x, y] = neuron.get_age()
         neuron_dict[tuple(coords)] = neuron
     return neuron_dict
+
+
+def create_neuron(neuron_grid, neuron_dict):
+    """
+    Create a new neuron in the grid and update the neuron dictionary.
+
+    Params
+    -------
+    - neuron_grid (np.ndarray): Grid representing neuron health states.
+    - neuron_dict (dict): Dictionary mapping coordinates to Neuron objects.
+
+    Returns
+    -------
+    - None
+    """
+    empty_cells = np.argwhere(neuron_grid == 0)
+
+    if len(empty_cells) > 0:
+        x, y = empty_cells[np.random.choice(len(empty_cells))]
+        neuron = Neuron(x, y)
+        neuron_grid[x, y] = neuron.get_age()
+        neuron_dict[tuple((x, y))] = neuron

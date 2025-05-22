@@ -14,27 +14,29 @@ HEALTH_NEURON = 1  # Value representing a healthy neuron
 DEATH_NEURON = -1  # Value representing a dead neuron
 DEATH_MIN = -5  # Minimum value for neuron death state
 
+NEW_CELL_CHANGE = 0.7  # Change in cell state for new cells
+
 # Grid and diffusion parameters
 GRID_SIZE = 50  # Grid size (number of cells per side)
 GRID_SPACING = 0.044  # Grid spacing (mm)
 
-k_A = 0.7  # Protein production rate (μg/μg/day)
-k_B = 0.1  # Prion production rate (μg/μg/day)
+k_A = 0.7  # Protein decay rate (μg/μg/day)
+k_B = 0.01  # Prion decay rate (μg/μg/day)
 k_c = 0.6  # Conversion rate (μg/μg/day)
 D_A = 0.7  # Protein diffusion coefficient (mm^2/day)
-D_B = 0.5  # Prion diffusion coefficient (mm^2/day)
+D_B = 0.6  # Prion diffusion coefficient (mm^2/day)
 
 # Simulation time parameters
 TIME = 250  # Total simulation time (days)
-TIME_SPACING = 0.001  # Time step size (days)
+TIME_SPACING = 0.01  # Time step size (days * spacing)
 SECONDS = 25  # Number of timesteps per second (for animation)
 SAVE_INTERVAL = 10  # Interval for saving simulation state (timesteps)
 GIF_DURATION = 10  # Duration of GIF animations (seconds)
 
 # Plotting parameters
-FIG_DPI = 300  # Figure resolution (dots per inch)
+FIG_DPI = 300  # Figure resolution
 
 # Biological parameters
 SECRETED_VALUE = 4  # Protein secreted per neuron per day (μm/μg)
-PRION_THRESHOLD = 0.1  # Prion threshold for neuron death (μg/μg neuron)
+PRION_THRESHOLD = 1  # Prion threshold for neuron death (μg/μg neuron)
 NUMBER_OF_NEURONS = 500  # Total number of neurons in the simulation

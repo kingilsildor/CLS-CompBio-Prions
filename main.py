@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from tqdm import tqdm
 
@@ -149,12 +151,16 @@ def plot_simulation_results(neuron_dict):
 
 
 def main():
+    start_time = time.time()
     A, B, eqA, eqB, neuron_grid, neuron_dict, protein_grid, prion_grid = (
         initialize_simulation()
     )
 
     run_simulation(A, B, eqA, eqB, neuron_grid, neuron_dict, protein_grid, prion_grid)
     plot_simulation_results(neuron_dict)
+    end_time = time.time()
+
+    print(f"Simulation completed in {end_time - start_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

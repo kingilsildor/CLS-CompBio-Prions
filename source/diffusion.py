@@ -246,9 +246,12 @@ def run_diffusion(
         protein_grid = A.value.reshape((GRID_SIZE, GRID_SIZE))
         prion_grid = B.value.reshape((GRID_SIZE, GRID_SIZE))
 
+        copy_neuron_dict = neuron_dict.copy()
         for neuron in neuron_dict.values():
             if neuron.alive:
-                neuron.age_cell()
-                neuron.prion_cell_death(prion_grid)
+                neuron.age_cell(neuron_grid, copy_neuron_dict)
+                neuron.prion_cell_death(prion_grid, neuron_grid, copy_neuron_dict)
             coords = neuron.get_coordinates()
             neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
+
+        neuron_dict.update(copy_neuron_dict)
