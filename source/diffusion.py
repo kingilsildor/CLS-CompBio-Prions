@@ -1,5 +1,6 @@
 import numpy as np
 from fipy import CellVariable, DiffusionTerm, TransientTerm
+from fipy.meshes.uniformGrid2D import UniformGrid2D
 from scipy.ndimage import convolve, distance_transform_edt, gaussian_filter
 from tqdm import tqdm
 
@@ -8,7 +9,22 @@ from scripts.data_manipulation import write_grid
 from source.cells import neuron_secrete
 
 
-def make_diffusion_kernel(size: int, sigma_scale: float = 0.3) -> np.ndarray:
+def make_diffusion_kernel(
+    size: int,
+    sigma_scale: float = 0.3,
+) -> np.ndarray:
+    """
+    Create a normalized 2D Gaussian kernel for diffusion.
+
+    Params
+    -------
+    - size (int): Size of the kernel (will be made odd if even).
+    - sigma_scale (float, optional): Scaling factor for Gaussian sigma. Defaults to 0.3.
+
+    Returns
+    -------
+    - kernel (np.ndarray): Normalized 2D Gaussian kernel.
+    """
     if size % 2 == 0:
         size += 1
 
@@ -24,7 +40,24 @@ def make_diffusion_kernel(size: int, sigma_scale: float = 0.3) -> np.ndarray:
     return kernel
 
 
-def make_diffusion_gradient(init_grid, diffusion_power, scaling_factor):
+def make_diffusion_gradient(
+    init_grid: np.ndarray,
+    diffusion_power: float,
+    scaling_factor: float,
+) -> np.ndarray:
+    """
+    Create a diffusion gradient based on initial grid and parameters.
+
+    Params
+    -------
+    - init_grid (np.ndarray): Initial grid for gradient calculation.
+    - diffusion_power (float): Power for distance-based decay.
+    - scaling_factor (float): Scaling factor for gradient.
+
+    Returns
+    -------
+    - combined_gradient (np.ndarray): Combined diffusion gradient.
+    """
     mask_main = init_grid == SECRETED_VALUE
     mask_diagonal = init_grid == SECRETED_VALUE / 2
 
@@ -43,7 +76,26 @@ def make_diffusion_gradient(init_grid, diffusion_power, scaling_factor):
     return combined_gradient
 
 
-def pre_diffusion(init_grid, diffusion_power=1 / 5, scaling_factor=2, kernel_size=9):
+def pre_diffusion(
+    init_grid: np.ndarray,
+    diffusion_power: float = 1 / 5,
+    scaling_factor: float = 2,
+    kernel_size: int = 9,
+) -> np.ndarray:
+    """
+    Apply pre-diffusion to an initial grid using a Gaussian kernel and gradient.
+
+    Params
+    -------
+    - init_grid (np.ndarray): Initial grid to diffuse.
+    - diffusion_power (float, optional): Power for gradient decay. Defaults to 1/5.
+    - scaling_factor (float, optional): Gradient scaling. Defaults to 2.
+    - kernel_size (int, optional): Size of Gaussian kernel. Defaults to 9.
+
+    Returns
+    -------
+    - diffused (np.ndarray): Diffused grid.
+    """
     kernel = make_diffusion_kernel(kernel_size)
     gradient = make_diffusion_gradient(init_grid, diffusion_power, scaling_factor)
     weighted_grid = init_grid * gradient
@@ -52,13 +104,50 @@ def pre_diffusion(init_grid, diffusion_power=1 / 5, scaling_factor=2, kernel_siz
     return diffused
 
 
-def set_boundary_conditions(mesh, A, B):
+def set_boundary_conditions(
+    mesh: UniformGrid2D,
+    A: CellVariable,
+    B: CellVariable,
+) -> None:
+    """
+    Set zero-gradient (Neumann) boundary conditions for protein and prion variables.
+
+    Params
+    -------
+    - mesh (UniformGrid2D): FiPy mesh object.
+    - A (CellVariable): Protein concentration variable.
+    - B (CellVariable): Prion concentration variable.
+    """
     for faceGroup in [mesh.facesLeft, mesh.facesRight, mesh.facesTop, mesh.facesBottom]:
         A.faceGrad.constrain([0.0], faceGroup)
         B.faceGrad.constrain([0.0], faceGroup)
 
 
-def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi):  # Increased default chi
+def set_equations(
+    A: CellVariable,
+    B: CellVariable,
+    k_A: float,
+    k_B: float,
+    k_c: float,
+    D_A: float,
+    D_B: float,
+    chi: float,
+) -> tuple:
+    """
+    Define the coupled diffusion-reaction equations for protein and prion.
+
+    Params
+    -------
+    - A (CellVariable): Protein concentration variable.
+    - B (CellVariable): Prion concentration variable.
+    - k_A, k_B, k_c (float): Reaction rate constants.
+    - D_A, D_B (float): Diffusion coefficients.
+    - chi (float): Cross-diffusion coefficient.
+
+    Returns
+    -------
+    - eqA, eqB: FiPy equation objects for protein and prion.
+    """
     eqA = TransientTerm(var=A) == -(k_A * A) - (k_c * A * B) + DiffusionTerm(
         coeff=D_A, var=A
     )
@@ -69,7 +158,34 @@ def set_equations(A, B, k_A, k_B, k_c, D_A, D_B, chi):  # Increased default chi
     return eqA, eqB
 
 
-def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, chi=10):
+def init_diffusion_eq(
+    mesh: UniformGrid2D,
+    protein_grid: np.ndarray,
+    prion_grid: np.ndarray,
+    k_A: float,
+    k_B: float,
+    k_c: float,
+    D_A: float,
+    D_B: float,
+    chi: float = 10.0,
+):
+    """
+    Initialize FiPy CellVariables and equations for protein and prion diffusion.
+
+    Params
+    -------
+    - mesh (UniformGrid2D): FiPy mesh object.
+    - protein_grid (np.ndarray): Initial protein concentration grid.
+    - prion_grid (np.ndarray): Initial prion concentration grid.
+    - k_A, k_B, k_c: Reaction rate constants.
+    - D_A, D_B: Diffusion coefficients.
+    - chi (float, optional): Cross-diffusion coefficient. Defaults to 10.
+
+    Returns
+    -------
+    - A, B: FiPy CellVariables for protein and prion.
+    - eqA, eqB: FiPy equation objects for protein and prion.
+    """
     A = CellVariable(name="A", mesh=mesh, value=protein_grid.flatten(), hasOld=True)
     B = CellVariable(name="B", mesh=mesh, value=prion_grid.flatten(), hasOld=True)
 
@@ -81,19 +197,38 @@ def init_diffusion_eq(mesh, protein_grid, prion_grid, k_A, k_B, k_c, D_A, D_B, c
 
 
 def run_diffusion(
-    A,
-    B,
+    A: CellVariable,
+    B: CellVariable,
     eqA,
     eqB,
-    time,
-    dt,
-    neuron_grid,
-    neuron_dict,
-    protein_grid,
-    prion_grid,
-    save_img=True,
-    save_interval=10,
+    time: int,
+    dt: float,
+    neuron_grid: np.ndarray,
+    neuron_dict: dict,
+    protein_grid: np.ndarray,
+    prion_grid: np.ndarray,
+    save_img: bool = True,
+    save_interval: int = 10,
 ):
+    """
+    Run the main diffusion simulation loop for protein and prion concentrations.
+
+    Params
+    -------
+    - A (CellVariable): Protein concentration variable.
+    - B (CellVariable): Prion concentration variable.
+    - eqA (BinaryTerm): Diffusion equation for protein.
+    - eqB (BinaryTerm): Diffusion equation for prion.
+    - time (int): Number of simulation steps.
+    - dt (float): Time step size.
+    - neuron_grid (np.ndarray): Grid representing neuron health states.
+    - neuron_dict (dict): Dictionary mapping neuron positions to their states.
+    - protein_grid (np.ndarray): Protein concentration grid.
+    - prion_grid (np.ndarray): Prion concentration grid.
+    - save_img (bool, optional): Whether to save grid images. Defaults to True.
+    - save_interval (int, optional): Interval for saving images. Defaults to 10.
+
+    """
     time = time + 1
     for step in tqdm(range(time), desc="Running Diffusion", unit="step"):
         if save_img and step % save_interval == 0:

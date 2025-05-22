@@ -4,7 +4,28 @@ import os
 import imageio
 
 
-def create_gif(file_path, timepoints, file_name="step", duration=10, delete_img=True):
+def create_gif(
+    file_path: str,
+    timepoints: list,
+    file_name: str = "step",
+    duration: int = 10,
+    delete_img: bool = True,
+):
+    """
+    Create a GIF animation from a sequence of PNG images and optionally delete the images.
+
+    Params
+    -------
+    - file_path (str): Directory containing the images.
+    - timepoints (list): List of timepoint indices to include in the GIF.
+    - file_name (str, optional): Base name of the image files. Defaults to "step".
+    - duration (int, optional): Duration of the GIF animation in seconds. Defaults to 10.
+    - delete_img (bool, optional): Whether to delete the PNG images after creating the GIF. Defaults to True.
+
+    Returns
+    -------
+    - A GIF file saved in the specified directory.
+    """
     images = [
         imageio.imread(f"{file_path}/{file_name}_{i:03d}.png") for i in timepoints
     ]

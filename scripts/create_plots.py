@@ -6,15 +6,42 @@ from config import *
 plt.style.use("bmh")
 
 
-def normalize_diffusion(grid):
+def normalize_diffusion(grid) -> np.ndarray:
+    """
+    Normalize a diffusion grid to the range [0, 1].
+
+    Params
+    -------
+    - grid (np.ndarray): Input grid to normalize.
+
+    Returns
+    -------
+    - grid (np.ndarray): Normalized grid.
+    """
     grid -= grid.min()
     if grid.max() != 0:
         grid /= grid.max()
-
     return grid
 
 
-def plot_concentrations(protein_grid, neuron_grid, prion_grid, step, total_steps):
+def plot_concentrations(
+    protein_grid, neuron_grid, prion_grid, step, total_steps
+) -> None:
+    """
+    Plot and save the concentrations of protein, neurons, and prions at a simulation step.
+
+    Params
+    -------
+    - protein_grid (np.ndarray): Protein concentration grid.
+    - neuron_grid (np.ndarray): Neuron health state grid.
+    - prion_grid (np.ndarray): Prion concentration grid.
+    - step (int): Current simulation step.
+    - total_steps (int): Total number of simulation steps.
+
+    Returns
+    -------
+    - Plot of protein, neuron, and prion concentrations.
+    """
     protein_grid = normalize_diffusion(protein_grid)
     prion_grid = normalize_diffusion(prion_grid)
 
@@ -41,7 +68,20 @@ def plot_concentrations(protein_grid, neuron_grid, prion_grid, step, total_steps
     plt.close()
 
 
-def plot_average_concentration(grids, grid_name, timepoints):
+def plot_average_concentration(grids, grid_name, timepoints) -> None:
+    """
+    Plot and save the average concentration of a grid over time.
+
+    Params
+    -------
+    - grids (list of np.ndarray): List of grids at each timepoint.
+    - grid_name (str): Name of the grid (for file naming).
+    - timepoints (list): List of timepoints.
+
+    Returns
+    -------
+    - Plot of average concentration over time.
+    """
     avg_concentration = [np.mean(grid) for grid in grids]
 
     plt.plot(timepoints, avg_concentration, marker="o")
@@ -54,7 +94,18 @@ def plot_average_concentration(grids, grid_name, timepoints):
     plt.close()
 
 
-def plot_neuron_deaths(neuron_dict):
+def plot_neuron_deaths(neuron_dict) -> None:
+    """
+    Plot and save the locations and causes of neuron deaths.
+
+    Params
+    -------
+    - neuron_dict (dict): Dictionary of Neuron objects.
+
+    Returns
+    -------
+    - Plot of neuron locations and causes of death.
+    """
     death_colors = {
         None: "green",  # Alive
         "age": "blue",
@@ -87,7 +138,20 @@ def plot_neuron_deaths(neuron_dict):
     plt.close()
 
 
-def plot_prion_cell_death(prion_grid, neuron_dict, step):
+def plot_prion_cell_death(prion_grid, neuron_dict, step) -> None:
+    """
+    Plot and save neuron locations and prion concentration, highlighting prion-induced deaths.
+
+    Params
+    -------
+    - prion_grid (np.ndarray): Prion concentration grid.
+    - neuron_dict (dict): Dictionary of Neuron objects.
+    - step (int): Current simulation step.
+
+    Returns
+    -------
+    - Plot of neuron locations and prion concentration.
+    """
     plt.figure(figsize=(8, 8))
     for neuron in neuron_dict.values():
         x, y = neuron.get_coordinates()

@@ -1,3 +1,4 @@
+import numpy as np
 from tqdm import tqdm
 
 from config import (
@@ -29,7 +30,7 @@ def initialize_simulation() -> tuple:
     """
     Initialize all simulation grids, neuron/protein/prion states, and diffusion equations.
 
-    Returns:
+    Returns
     --------
     - A: Initial protein concentration grid (np.ndarray)
     - B: Initial prion concentration grid (np.ndarray)
@@ -65,28 +66,32 @@ def initialize_simulation() -> tuple:
 
 
 def run_simulation(
-    A,
-    B,
+    A: np.ndarray,
+    B: np.ndarray,
     eqA,
     eqB,
-    neuron_grid,
-    neuron_dict,
-    protein_grid,
-    prion_grid,
+    neuron_grid: np.ndarray,
+    neuron_dict: dict,
+    protein_grid: np.ndarray,
+    prion_grid: np.ndarray,
 ):
     """
     Run the main simulation loop for protein and prion diffusion and neuron state updates.
 
-    Params:
+    Params
     -------
-    - A: Protein concentration grid (np.ndarray)
-    - B: Prion concentration grid (np.ndarray)
-    - eqA: Diffusion equation object for protein
-    - eqB: Diffusion equation object for prion
-    - neuron_grid: Grid representing neuron health states (np.ndarray)
-    - neuron_dict: Dictionary mapping neuron positions to their states (dict)
-    - protein_grid: Grid of secreted protein concentrations (np.ndarray)
-    - prion_grid: Grid of prion concentrations (np.ndarray)
+    - A (np.ndarray): Initial protein concentration grid
+    - B (np.ndarray): Initial prion concentration grid
+    - eqA (DiffusionEquation): Diffusion equation object for protein
+    - eqB (DiffusionEquation): Diffusion equation object for prion
+    - neuron_grid (np.ndarray): Grid representing neuron health states
+    - neuron_dict (dict): Dictionary mapping neuron positions to their states
+    - protein_grid (np.ndarray): Grid of secreted protein concentrations
+    - prion_grid (np.ndarray): Grid of prion concentrations
+
+    Returns
+    -------
+    - None
     """
     run_diffusion(
         A,
@@ -108,7 +113,7 @@ def plot_simulation_results(neuron_dict):
     """
     Generate and save plots, GIFs, and summary statistics from simulation results.
 
-    Params:
+    Params
     -------
     - neuron_dict (dict): Dictionary mapping neuron positions to their states
     """
@@ -118,7 +123,7 @@ def plot_simulation_results(neuron_dict):
     for timepoint in tqdm(timepoints, desc="Plotting", unit="timepoint"):
         neuron_grid, prion_grid, protein_grid = read_grids_at_timestep(timepoint)
         plot_concentrations(protein_grid, neuron_grid, prion_grid, timepoint, TIME)
-        plot_prion_cell_death(protein_grid, neuron_dict, timepoint)
+        plot_prion_cell_death(prion_grid, neuron_dict, timepoint)
 
     # Plot average concentrations over time
     for grid_name in ["protein", "prion"]:
