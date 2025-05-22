@@ -22,12 +22,12 @@ class Neuron:
         P_apop = P_apop = GAMMA * np.exp(DELTA * self.age)
 
         if MIN_AGE < self.age < MAX_AGE and np.random.rand() < P_apop:
-            # print(
-            #     f"Neuron at ({self.x}, {self.y}) died due to apoptosis. Age: {self.age}, P_apop: {P_apop}"
-            # )
+            print(
+                f"Neuron at ({self.x}, {self.y}) died due to apoptosis. Age: {self.age}, P_apop: {P_apop}"
+            )
             self.die()
         if self.age >= MAX_AGE:
-            # print(f"Neuron at ({self.x}, {self.y}) died due to age.")
+            print(f"Neuron at ({self.x}, {self.y}) died due to age.")
             self.die()
 
     def get_index(self, nx):
@@ -90,7 +90,9 @@ def prion_cell_death(neuron, prion_grid, neuron_grid):
         prion_sum = np.sum(neighborhood)
 
         if prion_sum > PRION_THRESHOLD:
-            # print(f"Neuron at ({x}, {y}) died due to prion accumulation.")
+            print(
+                f"Neuron at ({x}, {y}) died due to prion accumulation. Prion concentration: {prion_sum}"
+            )
             neuron.die()
 
 
