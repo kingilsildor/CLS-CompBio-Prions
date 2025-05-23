@@ -16,8 +16,9 @@ from scripts.create_plots import (
     plot_average_concentration,
     plot_concentrations,
     plot_neuron_deaths,
-    plot_prion_cell_death,
     plot_neuron_deaths_over_time,
+    plot_prion_cell_death,
+    plot_total_concentration,
 )
 from scripts.data_manipulation import delete_npy, read_all_grids, read_grids_at_timestep
 from source.cells import create_neuron_dict, neuron_secrete
@@ -131,8 +132,13 @@ def plot_simulation_results(neuron_dict, cell_death_counter) -> None:
 
     # Plot average concentrations over time
     for grid_name in ["protein", "prion"]:
+        if grid_name == "prion":
+            set_title = True
+        else:
+            set_title = False
         grids = read_all_grids(grid_name)
-        plot_average_concentration(grids, grid_name, timepoints)
+        plot_average_concentration(grids, grid_name, timepoints, set_title)
+        plot_total_concentration(grids, grid_name, timepoints, prion=set_title)
 
     # Clean up intermediate files
     delete_npy()

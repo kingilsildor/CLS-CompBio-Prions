@@ -68,7 +68,7 @@ def plot_concentrations(
     plt.close()
 
 
-def plot_average_concentration(grids, grid_name, timepoints) -> None:
+def plot_total_concentration(grids, grid_name, timepoints, prion=False) -> None:
     """
     Plot and save the total concentration of a grid over time.
 
@@ -85,12 +85,44 @@ def plot_average_concentration(grids, grid_name, timepoints) -> None:
     total_concentration = [np.sum(grid) for grid in grids]
 
     plt.plot(timepoints, total_concentration, marker="o")
-    plt.title("Total Concentration Over Time")
+    if not prion:
+        plt.title("Total Protein Concentration Over Time")
+    else:
+        plt.title("Total Prion Concentration Over Time")
     plt.xlabel("Timestep")
     plt.ylabel("Total Concentration")
 
     plt.tight_layout()
     plt.savefig(f"results/total_concentration_{grid_name}.png", dpi=FIG_DPI)
+    plt.close()
+
+
+def plot_average_concentration(grids, grid_name, timepoints, prion=False) -> None:
+    """
+    Plot and save the average concentration of a grid over time.
+
+    Params
+    -------
+    - grids (list of np.ndarray): List of grids at each timepoint.
+    - grid_name (str): Name of the grid (for file naming).
+    - timepoints (list): List of timepoints.
+
+    Returns
+    -------
+    - Plot of average concentration over time.
+    """
+    average_concentration = [np.mean(grid) for grid in grids]
+
+    plt.plot(timepoints, average_concentration, marker="o")
+    if not prion:
+        plt.title("Average Protein Concentration Over Time")
+    else:
+        plt.title("Average Prion Concentration Over Time")
+    plt.xlabel("Timestep")
+    plt.ylabel("Average Concentration")
+
+    plt.tight_layout()
+    plt.savefig(f"results/average_concentration_{grid_name}.png", dpi=FIG_DPI)
     plt.close()
 
 
