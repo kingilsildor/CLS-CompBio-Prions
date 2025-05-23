@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import math
 
 from config import *
 
@@ -162,7 +164,9 @@ def plot_neuron_deaths(neuron_dict) -> None:
 
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    plt.legend(by_label.values(), by_label.keys(), title="Death Cause")
+    plt.legend(
+        by_label.values(), by_label.keys(), title="Death Cause", loc="upper left"
+    )
     plt.xlabel("X")
     plt.ylabel("Y")
     plt.title("Neuron Locations and Cause of Death")
@@ -237,4 +241,54 @@ def plot_neuron_deaths_over_time(cell_death_counter, time) -> None:
 
     plt.tight_layout()
     plt.savefig("results/neuron_deaths_over_time.png", dpi=FIG_DPI)
+    plt.close()
+
+
+def plot_param_search(
+    cell_death_results: list, param_combinations: list, time: int
+) -> None:
+    """
+    Plot histograms of neuron deaths for each simulation.
+
+    Params
+    -------
+    - cell_death_results (list): List of neuron deaths for each parameter combination.
+    - param_combinations (list): List of parameter combinations.
+    - time (int): Total simulation time.
+
+    Returns
+    -------
+    - A grid of histogram plots saved to 'results/param_search.png'.
+    """
+    timepoints = np.arange(0, time + 1)
+
+    death_array = np.array(cell_death_results)
+    param_array = np.array(param_combinations)
+
+    num_sims = len(death_array)
+    cols = 4
+    rows = math.ceil(num_sims / cols)
+
+    fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
+    axes = axes.flatten()
+
+    for i in range(num_sims):
+        axes[i].hist(
+            timepoints,
+            bins=10,
+            weights=death_array[i],
+            color="blue",
+            alpha=0.7,
+            edgecolor="black",
+        )
+        axes[i].set_ylim(0, 50)
+        axes[i].set_title(f"Params: {param_array[i]}")
+        axes[i].set_ylabel("Amount of Neurons killed")
+        axes[i].set_xlabel("Timestep")
+
+    for j in range(num_sims, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.tight_layout()
+    plt.savefig("results/param_search.png", dpi=FIG_DPI)
     plt.close()

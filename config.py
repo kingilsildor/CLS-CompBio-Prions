@@ -38,6 +38,6 @@ FIG_DPI = 300  # Figure resolution
 
 # Biological parameters
 SECRETED_VALUE = 0.4  # Protein secreted per neuron per day (μm/μg)
-PRION_THRESHOLD = 0.001  # Prion threshold for neuron death (μg/μg neuron)
+PRION_THRESHOLD = 0.005  # Prion threshold for neuron death (μg/μg neuron)
 PRION_GROWTH_THRESHOLD = 0.1  # Prion growth rate (μg/μg/day)
 NUMBER_OF_NEURONS = 500  # Total number of neurons in the simulation
