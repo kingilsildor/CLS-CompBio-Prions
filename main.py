@@ -4,12 +4,17 @@ import numpy as np
 from tqdm import tqdm
 
 from config import (
+    D_A,
+    D_B,
     GRID_SIZE,
     GRID_SPACING,
     HEALTH_NEURON,
     SAVE_INTERVAL,
     TIME,
     TIME_SPACING,
+    k_A,
+    k_B,
+    k_c,
 )
 from scripts.create_gif import create_gif
 from scripts.create_plots import (
@@ -59,11 +64,11 @@ def initialize_simulation() -> tuple:
         mesh,
         protein_grid,
         prion_grid,
-        k_A=0.02,
-        k_B=0.05,
-        k_c=0.01,
-        D_A=0.1,
-        D_B=0.05,
+        k_A=k_A,
+        k_B=k_B,
+        k_c=k_c,
+        D_A=D_A,
+        D_B=D_B,
     )
 
     return A, B, eqA, eqB, neuron_grid, neuron_dict, protein_grid, prion_grid
