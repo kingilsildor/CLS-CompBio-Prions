@@ -23,8 +23,8 @@ GRID_SPACING = 0.045  # Grid spacing (mm)
 k_A = 0.7  # Protein decay rate (μg/μg/day)
 k_B = 0.05  # Prion decay rate (μg/μg/day)
 k_c = 1.2  # Conversion rate (μg/μg/day)
-D_A = 0.7  # Protein diffusion coefficient (mm^2/day)
-D_B = 0.6  # Prion diffusion coefficient (mm^2/day)
+D_A = 0.4  # Protein diffusion coefficient (mm^2/day)
+D_B = 0.3  # Prion diffusion coefficient (mm^2/day)
 
 # Simulation time parameters
 TIME = 300  # Total simulation time (days)
@@ -38,6 +38,6 @@ FIG_DPI = 300  # Figure resolution
 
 # Biological parameters
 SECRETED_VALUE = 0.4  # Protein secreted per neuron per day (μm/μg)
-PRION_THRESHOLD = 0.005  # Prion threshold for neuron death (μg/μg neuron)
+PRION_THRESHOLD = 0.001  # Prion threshold for neuron death (μg/μg neuron)
 PRION_GROWTH_THRESHOLD = 0.1  # Prion growth rate (μg/μg/day)
 NUMBER_OF_NEURONS = 500  # Total number of neurons in the simulation

@@ -2,9 +2,10 @@ import time
 
 import numpy as np
 from tqdm import tqdm
-from itertools import product
 
 from config import (
+    D_A,
+    D_B,
     GRID_SIZE,
     GRID_SPACING,
     HEALTH_NEURON,
@@ -14,8 +15,6 @@ from config import (
     k_A,
     k_B,
     k_c,
-    D_A,
-    D_B,
 )
 from scripts.create_gif import create_gif
 from scripts.create_plots import (
@@ -23,9 +22,9 @@ from scripts.create_plots import (
     plot_concentrations,
     plot_neuron_deaths,
     plot_neuron_deaths_over_time,
+    plot_param_search,
     plot_prion_cell_death,
     plot_total_concentration,
-    plot_param_search,
 )
 from scripts.data_manipulation import delete_npy, read_all_grids, read_grids_at_timestep
 from source.cells import create_neuron_dict, neuron_secrete
@@ -182,7 +181,6 @@ def plot_simulation_results(
     # Plot neuron deaths summary
     plot_neuron_deaths(neuron_dict)
     plot_neuron_deaths_over_time(cell_death_counter, TIME)
-
     plot_param_search(cell_death_results, param_combinations, TIME)
 
 
@@ -219,6 +217,7 @@ def param_search(
     DA_vals = np.linspace(D_A, D_A + step_size * (param_amount - 1), param_amount)
     DB_vals = np.linspace(D_B, D_B + step_size * (param_amount - 1), param_amount)
 
+    # Custom variables for the last parameter
     kA_vals[-1] = 0.02
     kB_vals[-1] = 0.05
     kc_vals[-1] = 0.01

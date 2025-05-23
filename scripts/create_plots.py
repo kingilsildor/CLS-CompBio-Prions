@@ -1,7 +1,7 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-import math
 
 from config import *
 
@@ -91,8 +91,8 @@ def plot_total_concentration(grids, grid_name, timepoints, prion=False) -> None:
         plt.title("Total Protein Concentration Over Time")
     else:
         plt.title("Total Prion Concentration Over Time")
-    plt.xlabel("Timestep")
-    plt.ylabel("Total Concentration")
+    plt.xlabel("Timestep (days)")
+    plt.ylabel(r"Total Concentration ($\mu$g)")
 
     plt.tight_layout()
     plt.savefig(f"results/total_concentration_{grid_name}.png", dpi=FIG_DPI)
@@ -121,7 +121,7 @@ def plot_average_concentration(grids, grid_name, timepoints, prion=False) -> Non
     else:
         plt.title("Average Prion Concentration Over Time")
     plt.xlabel("Timestep")
-    plt.ylabel("Average Concentration")
+    plt.ylabel(r"Average Concentration ($\mu$g)")
 
     plt.tight_layout()
     plt.savefig(f"results/average_concentration_{grid_name}.png", dpi=FIG_DPI)
@@ -164,11 +164,9 @@ def plot_neuron_deaths(neuron_dict) -> None:
 
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    plt.legend(
-        by_label.values(), by_label.keys(), title="Death Cause", loc="upper left"
-    )
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    plt.legend(by_label.values(), by_label.keys(), title="Death Cause")
+    plt.xlabel("X (mm)")
+    plt.ylabel("Y (mm)")
     plt.title("Neuron Locations and Cause of Death")
     plt.savefig("results/neuron_deaths.png", dpi=FIG_DPI)
     plt.close()
@@ -205,8 +203,8 @@ def plot_prion_cell_death(prion_grid, neuron_dict, step) -> None:
         loc="upper right",
         title="Neuron Status",
     )
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    plt.xlabel("X (mm)")
+    plt.ylabel("Y(mm)")
     plt.title("Neuron Locations and Prion Concentration")
     plt.savefig(f"results/prion_cell_death_{step:03d}.png", dpi=FIG_DPI)
     plt.close()
@@ -236,7 +234,7 @@ def plot_neuron_deaths_over_time(cell_death_counter, time) -> None:
         edgecolor="black",
     )
     plt.title("Neuron Deaths Over Time")
-    plt.xlabel("Timestep")
+    plt.xlabel("Timestep (days)")
     plt.ylabel("Number of Neuron Deaths")
 
     plt.tight_layout()
