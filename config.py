@@ -23,11 +23,11 @@ GRID_SPACING = 0.045  # Grid spacing (mm)
 k_A = 0.7  # Protein decay rate (μg/μg/day)
 k_B = 0.05  # Prion decay rate (μg/μg/day)
 k_c = 1.2  # Conversion rate (μg/μg/day)
-D_A = 0.7  # Protein diffusion coefficient (mm^2/day)
-D_B = 0.6  # Prion diffusion coefficient (mm^2/day)
-
+D_A = 0.4  # Protein diffusion coefficient (mm^2/day)
+D_B = 0.3  # Prion diffusion coefficient (mm^2/day)
+# 0.7, 0.6
 # Simulation time parameters
-TIME = 300  # Total simulation time (days)
+TIME = 500  # Total simulation time (days)
 TIME_SPACING = 0.01  # Time step size (days * spacing)
 SECONDS = 25  # Number of timesteps per second (for animation)
 SAVE_INTERVAL = 10  # Interval for saving simulation state (timesteps)
