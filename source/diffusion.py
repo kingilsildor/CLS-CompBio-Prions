@@ -207,6 +207,7 @@ def run_diffusion(
     neuron_dict: dict,
     protein_grid: np.ndarray,
     prion_grid: np.ndarray,
+    sim_amount: int = 5,
     save_img: bool = True,
     save_interval: int = 10,
 ):
@@ -225,6 +226,7 @@ def run_diffusion(
     - neuron_dict (dict): Dictionary mapping neuron positions to their states.
     - protein_grid (np.ndarray): Protein concentration grid.
     - prion_grid (np.ndarray): Prion concentration grid.
+    - sim_amount (int, optional): Number of simulation repetitions per step. Defaults to 5.
     - save_img (bool, optional): Whether to save grid images. Defaults to True.
     - save_interval (int, optional): Interval for saving images. Defaults to 10.
 
@@ -233,32 +235,52 @@ def run_diffusion(
     cell_death_counter = np.zeros(time, dtype=int)
 
     for step in tqdm(range(time), desc="Running Diffusion", unit=" step"):
+        protein_accumulator = np.zeros((GRID_SIZE, GRID_SIZE))
+        prion_accumulator = np.zeros((GRID_SIZE, GRID_SIZE))
+        neuron_accumulator = np.zeros((GRID_SIZE, GRID_SIZE))
+        cell_death_sum = 0
+
+        for _ in range(sim_amount):
+            A_temp = A.copy()
+            B_temp = B.copy()
+
+            A_temp.updateOld()
+            B_temp.updateOld()
+
+            eqA.solve(var=A_temp, dt=dt)
+            eqB.solve(var=B_temp, dt=dt)
+
+            A_temp.value += neuron_secrete(neuron_grid, dt).flatten()
+            protein_grid = A_temp.value.reshape((GRID_SIZE, GRID_SIZE))
+            prion_grid = B_temp.value.reshape((GRID_SIZE, GRID_SIZE))
+
+            copy_neuron_dict = {k: v.copy() for k, v in neuron_dict.items()}
+            temp_neuron_grid = np.copy(neuron_grid)
+
+            for neuron in copy_neuron_dict.values():
+                if neuron.alive:
+                    cell_death_sum += neuron.age_cell(
+                        temp_neuron_grid, copy_neuron_dict
+                    )
+                    cell_death_sum += neuron.prion_cell_death(
+                        prion_grid, temp_neuron_grid, copy_neuron_dict
+                    )
+                coords = neuron.get_coordinates()
+                temp_neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
+
+            protein_accumulator += protein_grid
+            prion_accumulator += prion_grid
+            neuron_accumulator += temp_neuron_grid
+
+        protein_grid = protein_accumulator / sim_amount
+        prion_grid = prion_accumulator / sim_amount
+        neuron_grid = neuron_accumulator / sim_amount
+        cell_death_counter[step] = cell_death_sum / sim_amount
+
         if save_img and step % save_interval == 0:
             write_grid(protein_grid, "protein", step)
             write_grid(prion_grid, "prion", step)
             write_grid(neuron_grid, "neuron", step)
-
-        A.updateOld()
-        B.updateOld()
-
-        eqA.solve(var=A, dt=dt)
-        eqB.solve(var=B, dt=dt)
-
-        A.value += neuron_secrete(neuron_grid, dt).flatten()
-        protein_grid = A.value.reshape((GRID_SIZE, GRID_SIZE))
-        prion_grid = B.value.reshape((GRID_SIZE, GRID_SIZE))
-
-        copy_neuron_dict = neuron_dict.copy()
-        for neuron in neuron_dict.values():
-            if neuron.alive:
-                cell_death_counter[step] += neuron.age_cell(
-                    neuron_grid, copy_neuron_dict
-                )
-                cell_death_counter[step] += neuron.prion_cell_death(
-                    prion_grid, neuron_grid, copy_neuron_dict
-                )
-            coords = neuron.get_coordinates()
-            neuron_grid[int(coords[0]), int(coords[1])] = neuron.get_age()
 
         neuron_dict.update(copy_neuron_dict)
     return cell_death_counter
